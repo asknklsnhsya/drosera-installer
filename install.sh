@@ -3,6 +3,23 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 # ------------------------------------------------------------
+# 0. Check required environment variables
+# ------------------------------------------------------------
+for var in GITHUB_EMAIL GITHUB_USERNAME YOUR_PRIVATE_KEY YOUR_PUBLIC_IP; do
+  if [ -z "${!var:-}" ]; then
+    echo "❌ Error: Environment variable '$var' is not set." >&2
+    echo "   Usage:" >&2
+    echo "     GITHUB_EMAIL=you@example.com \\" >&2
+    echo "     GITHUB_USERNAME=yourgithubname \\" >&2
+    echo "     YOUR_PRIVATE_KEY=0xabc123… \\" >&2
+    echo "     YOUR_PUBLIC_IP=1.2.3.4 \\" >&2
+    echo "     curl -sSL https://raw.githubusercontent.com/<USERNAME>/drosera-installer/main/install.sh \\" >&2
+    echo "       | sudo bash" >&2
+    exit 1
+  fi
+done
+
+# ------------------------------------------------------------
 # 1. System updates & essentials
 # ------------------------------------------------------------
 apt-get update && apt-get upgrade -y
@@ -29,24 +46,17 @@ systemctl enable docker && systemctl start docker
 # ------------------------------------------------------------
 # 3. Install Drosera CLI (droseraup) & ensure it's on PATH
 # ------------------------------------------------------------
-# Fetch the installer script and run it :contentReference[oaicite:0]{index=0}
 curl -L https://app.drosera.io/install | bash
-
-# Possible install locations (as seen in community examples) :contentReference[oaicite:1]{index=1}
 for p in "$HOME/.drosera/bin" "$HOME/.local/bin" "/usr/local/bin"; do
   if [[ -x "$p/droseraup" ]]; then
     export PATH="$PATH:$p"
     break
   fi
 done
-
-# Fail early if it's still missing
 if ! command -v droseraup >/dev/null 2>&1; then
-  echo "❌ droseraup not found after install!" >&2
+  echo "❌ droseraup not found after installation!" >&2
   exit 1
 fi
-
-# Install the actual Drosera binary
 droseraup
 
 # ------------------------------------------------------------
@@ -58,7 +68,6 @@ foundryup
 
 curl -fsSL https://bun.sh/install | bash
 export PATH="$PATH:$HOME/.bun/bin"
-# verify
 bun --version
 
 # ------------------------------------------------------------
@@ -71,7 +80,6 @@ git config --global user.name   "${GITHUB_USERNAME}"
 forge init -t drosera-network/trap-foundry-template
 bun install
 forge build
-
 export DROSERA_PRIVATE_KEY="${YOUR_PRIVATE_KEY}"
 drosera apply --yes
 
@@ -98,7 +106,6 @@ sed -i "s/your_evm_private_key/${YOUR_PRIVATE_KEY}/" .env
 sed -i "s/your_vps_public_ip/${YOUR_PUBLIC_IP}/" .env
 docker compose up -d
 
-echo "✅ Done! Drosera trap, operator, and dashboard are all up.  
-   Follow logs with: cd /root/Drosera-Network && docker compose logs -f"
-
+echo "✅ Done! Drosera trap, operator, and dashboard are all up."
+echo "   View logs: cd /root/Drosera-Network && docker compose logs -f"
 
