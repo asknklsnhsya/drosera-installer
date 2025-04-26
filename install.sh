@@ -29,21 +29,29 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
   https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
   > /etc/apt/sources.list.d/docker.list
 apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io \
-                   docker-buildx-plugin docker-compose-plugin
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 systemctl enable docker && systemctl start docker
 
 # --------------------------------
 # 3. Install Drosera & dev tooling
 # --------------------------------
+# 3a) Drosera installer (droseraup) :contentReference[oaicite:0]{index=0}
 curl -L https://app.drosera.io/install | bash
-source /root/.bashrc
+# ensure droseraup is in PATH for this session
+export PATH=$PATH:$HOME/.drosera/bin
+# install the actual drosera binary
 droseraup
+
+# 3b) Foundry :contentReference[oaicite:1]{index=1}
 curl -L https://foundry.paradigm.xyz | bash
-source /root/.bashrc
+export PATH=$PATH:$HOME/.foundry/bin
 foundryup
+
+# 3c) Bun 
 curl -fsSL https://bun.sh/install | bash
-source /root/.bashrc
+export PATH=$PATH:$HOME/.bun/bin
+# verify
+bun --version
 
 # ----------------------
 # 4. Build & deploy Trap
@@ -81,6 +89,6 @@ sed -i "s/your_evm_private_key/${YOUR_PRIVATE_KEY}/" .env
 sed -i "s/your_vps_public_ip/${YOUR_PUBLIC_IP}/" .env
 docker compose up -d
 
-echo "✅ Done! Drosera trap, operator, and dashboard are all up and running.
-   Check logs with: cd /root/Drosera-Network && docker compose logs -f"
+echo "✅ Done! Drosera trap, operator, and dashboard are all up.
+   Follow logs with: cd /root/Drosera-Network && docker compose logs -f"
 
